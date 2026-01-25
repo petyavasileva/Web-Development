@@ -1,0 +1,39 @@
+:root{
+  --card-radius: 16px;
+}
+
+body{
+  background: #f6f7fb;
+}
+
+.navbar{
+  box-shadow: 0 10px 24px rgba(0,0,0,.12);
+}
+
+.card{
+  border: 0;
+  border-radius: var(--card-radius);
+  box-shadow: 0 10px 24px rgba(0,0,0,.06);
+}
+
+.btn, .form-control, .form-select, .alert, .input-group-text{
+  border-radius: 12px;
+}
+
+.badge{
+  border-radius: 999px;
+}
+
+.page-title{
+  font-weight: 700;
+  letter-spacing: .2px;
+}
+
+.small-muted{
+  color: #6c757d;
+  font-size: .95rem;
+}
+
+.post-content{
+  white-space: pre-line;
+}

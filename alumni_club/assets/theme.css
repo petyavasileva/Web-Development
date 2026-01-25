@@ -1,0 +1,166 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+:root{
+  --bg: #0b1220;
+  --surface: rgba(255,255,255,.08);
+  --surface2: rgba(255,255,255,.12);
+  --text: #0f172a;
+  --muted: #64748b;
+  --card: #ffffff;
+  --border: rgba(15, 23, 42, .10);
+
+  --primary: #2563eb;   /* blue */
+  --primary2:#7c3aed;   /* violet */
+  --success: #16a34a;
+  --warning: #f59e0b;
+  --danger:  #ef4444;
+
+  --radius: 18px;
+  --shadow: 0 14px 40px rgba(2, 6, 23, .10);
+  --shadow2: 0 10px 30px rgba(2, 6, 23, .16);
+}
+
+*{ font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+
+body{
+  background:
+    radial-gradient(1100px 520px at 15% -10%, rgba(37,99,235,.20), transparent 55%),
+    radial-gradient(900px 520px at 85% 0%, rgba(124,58,237,.18), transparent 55%),
+    radial-gradient(1000px 800px at 50% 120%, rgba(2,132,199,.10), transparent 55%),
+    #f6f7fb;
+  color: var(--text);
+}
+
+a{ text-decoration: none; }
+
+.container{ max-width: 1100px; }
+
+/* Navbar */
+.navbar{
+  backdrop-filter: blur(12px);
+  background: rgba(10, 15, 30, .72) !important;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+}
+.navbar-brand{
+  font-weight: 800;
+  letter-spacing: .2px;
+}
+.nav-pill{
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.06);
+  color: rgba(255,255,255,.90);
+}
+.nav-pill:hover{ background: rgba(255,255,255,.10); }
+
+/* Buttons */
+.btn{
+  border-radius: 14px !important;
+  font-weight: 600;
+}
+.btn-primary{
+  background: linear-gradient(135deg, var(--primary), var(--primary2));
+  border: 0;
+  box-shadow: 0 10px 22px rgba(37,99,235,.22);
+}
+.btn-primary:hover{ filter: brightness(1.03); }
+.btn-soft{
+  background: rgba(37,99,235,.10);
+  border: 1px solid rgba(37,99,235,.18);
+  color: #1e40af;
+}
+.btn-soft:hover{ background: rgba(37,99,235,.14); }
+
+/* Cards */
+.card{
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+.card-hover{ transition: transform .15s ease, box-shadow .15s ease; }
+.card-hover:hover{ transform: translateY(-2px); box-shadow: var(--shadow2); }
+.card-muted{
+  color: var(--muted);
+  font-size: .95rem;
+}
+
+/* Inputs */
+.form-control, .form-select, .input-group-text, .alert{
+  border-radius: 14px !important;
+}
+.form-control, .form-select{
+  border: 1px solid rgba(15,23,42,.12);
+  padding: .72rem .9rem;
+}
+.form-control:focus, .form-select:focus{
+  box-shadow: 0 0 0 .25rem rgba(37,99,235,.12);
+  border-color: rgba(37,99,235,.35);
+}
+
+/* Badges */
+.badge{
+  border-radius: 999px;
+  font-weight: 600;
+  letter-spacing: .2px;
+}
+.badge-soft{
+  background: rgba(15,23,42,.06);
+  color: rgba(15,23,42,.70);
+  border: 1px solid rgba(15,23,42,.10);
+}
+
+/* Hero */
+.hero{
+  border-radius: 24px;
+  overflow: hidden;
+  position: relative;
+  border: 1px solid rgba(15,23,42,.10);
+  box-shadow: var(--shadow2);
+}
+.hero::before{
+  content:"";
+  position:absolute; inset:0;
+  background:
+    linear-gradient(120deg, rgba(37,99,235,.86), rgba(124,58,237,.78)),
+    url("https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&w=2000&q=70");
+  background-size: cover;
+  background-position: center;
+  filter: saturate(1.1);
+}
+.hero > .hero-inner{
+  position: relative;
+  padding: 42px 42px;
+  color: white;
+}
+.hero h1{ font-weight: 900; letter-spacing: -.5px; }
+.hero p{ color: rgba(255,255,255,.86); max-width: 720px; }
+
+/* Cover images */
+.cover{
+  height: 180px;
+  border-radius: 20px;
+  overflow: hidden;
+  position: relative;
+  border: 1px solid rgba(15,23,42,.10);
+}
+.cover img{
+  width:100%; height:100%; object-fit:cover;
+  transform: scale(1.02);
+}
+.cover::after{
+  content:"";
+  position:absolute; inset:0;
+  background: linear-gradient(180deg, transparent 45%, rgba(2,6,23,.55));
+}
+
+/* Post content formatting */
+.post-content{ white-space: pre-line; }
+
+/* Small UI */
+.kpi{
+  background: rgba(255,255,255,.70);
+  border: 1px solid rgba(15,23,42,.10);
+  border-radius: 16px;
+  padding: 12px 14px;
+}
+.kpi .num{ font-weight: 800; font-size: 1.05rem; }
+.kpi .lbl{ color: var(--muted); font-size: .92rem; }
