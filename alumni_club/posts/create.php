@@ -2,13 +2,19 @@
 require_once __DIR__ . "/../db.php";
 require_once __DIR__ . "/../auth.php";
 require_login();
-require_once __DIR__ . "/../header.php";
 
 $uid = current_user_id();
-$club_id = isset($_GET["club_id"]) ? (int)$_GET["club_id"] : 0;
-if ($club_id <= 0) die("Невалиден club_id.");
+$user_name = current_user_name($conn);
 
-// проверка дали е member
+$club_id = (int)($_GET["club_id"] ?? 0);
+if ($club_id <= 0) exit("Невалиден club_id.");
+
+$stClub = $conn->prepare("SELECT id, name FROM clubs WHERE id = ? LIMIT 1");
+$stClub->bind_param("i", $club_id);
+$stClub->execute();
+$club = $stClub->get_result()->fetch_assoc();
+if (!$club) exit("Клубът не е намерен.");
+
 $st = $conn->prepare("SELECT 1 FROM club_members WHERE club_id = ? AND user_id = ? LIMIT 1");
 $st->bind_param("ii", $club_id, $uid);
 $st->execute();
@@ -16,16 +22,23 @@ $is_member = (bool)$st->get_result()->fetch_row();
 
 if (!$is_member) {
     http_response_code(403);
-    die("Трябва да си член, за да публикуваш.");
+    exit("Трябва да си член, за да публикуваш.");
 }
 
 $error = "";
+$title = "";
+$content = "";
+
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
-    $title = trim($_POST["title"] ?? "");
-    $content = trim($_POST["content"] ?? "");
+    csrf_verify();
+
+    $title = trim((string)($_POST["title"] ?? ""));
+    $content = trim((string)($_POST["content"] ?? ""));
 
     if ($title === "" || $content === "") {
         $error = "Заглавие и съдържание са задължителни.";
+    } elseif (mb_strlen($title) > 200) {
+        $error = "Заглавието е твърде дълго (макс. 200).";
     } else {
         $st2 = $conn->prepare("INSERT INTO posts (club_id, author_id, title, content) VALUES (?, ?, ?, ?)");
         $st2->bind_param("iiss", $club_id, $uid, $title, $content);
@@ -36,27 +49,45 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         exit;
     }
 }
+
+layout_header("Нов пост – " . e((string)$club["name"]), $uid, $user_name);
 ?>
 
-<h2 class="page-title mb-3">Нов пост</h2>
+<a class="btn btn--sm" href="/alumni_club/clubs/view.php?id=<?= (int)$club_id ?>">← Назад</a>
+<div style="height:10px;"></div>
+
+<h1 class="page__title">Нов пост</h1>
+<div class="muted">Клуб: <strong><?= e((string)$club["name"]) ?></strong></div>
+
+<div style="height:12px;"></div>
 
 <?php if ($error): ?>
-  <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>
+  <div class="toast toast--danger">
+    <div class="toast__dot" aria-hidden="true"></div>
+    <div class="toast__msg"><?= e($error) ?></div>
+  </div>
 <?php endif; ?>
 
-<form method="post" class="card card-body" style="max-width:900px;">
-  <div class="mb-3">
-    <label class="form-label">Заглавие</label>
-    <input class="form-control" name="title" maxlength="200" required>
-  </div>
+<form method="post" class="card" style="max-width:900px;">
+  <div class="card__pad">
+    <?= csrf_field() ?>
 
-  <div class="mb-3">
-    <label class="form-label">Съдържание</label>
-    <textarea class="form-control" name="content" rows="8" required></textarea>
-  </div>
+    <div class="field">
+      <label for="title">Заглавие</label>
+      <input class="input" id="title" name="title" maxlength="200" value="<?= e($title) ?>" required>
+    </div>
 
-  <button class="btn btn-primary">Публикувай</button>
-  <a class="btn btn-link" href="/alumni_club/clubs/view.php?id=<?= (int)$club_id ?>">Назад</a>
+    <div style="height:12px;"></div>
+
+    <div class="field">
+      <label for="content">Съдържание</label>
+      <textarea id="content" name="content" rows="10" required><?= e($content) ?></textarea>
+    </div>
+
+    <div style="height:16px;"></div>
+
+    <button class="btn btn--primary" type="submit">Публикувай</button>
+  </div>
 </form>
 
-<?php require_once __DIR__ . "/../footer.php"; ?>
+<?php layout_footer(); ?>
