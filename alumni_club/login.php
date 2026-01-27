@@ -1,20 +1,25 @@
 <?php
 require_once __DIR__ . "/db.php";
 require_once __DIR__ . "/auth.php";
-require_once __DIR__ . "/header.php";
+
+$uid = current_user_id();
+$user_name = $uid ? current_user_name($conn) : null;
 
 $error = "";
+$email = "";
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
-    $email = trim($_POST["email"] ?? "");
-    $pass = $_POST["password"] ?? "";
+    csrf_verify();
 
-    $st = $conn->prepare("SELECT id, password FROM users WHERE email = ? LIMIT 1");
+    $email = trim((string)($_POST["email"] ?? ""));
+    $pass = (string)($_POST["password"] ?? "");
+
+    $st = $conn->prepare("SELECT id, password, name FROM users WHERE email = ? LIMIT 1");
     $st->bind_param("s", $email);
     $st->execute();
     $user = $st->get_result()->fetch_assoc();
 
-    if (!$user || !password_verify($pass, $user["password"])) {
+    if (!$user || !password_verify($pass, (string)$user["password"])) {
         $error = "Грешен email или парола.";
     } else {
         $_SESSION["user_id"] = (int)$user["id"];
@@ -23,26 +28,39 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         exit;
     }
 }
+
+layout_header("Вход – Alumni Club", $uid, $user_name, 'auth');
 ?>
 
-<h2 class="page-title mb-3">Вход</h2>
+<h1 class="page__title">Вход</h1>
 
 <?php if ($error): ?>
-  <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>
+  <div class="toast toast--danger">
+    <div class="toast__dot" aria-hidden="true"></div>
+    <div class="toast__msg"><?= e($error) ?></div>
+  </div>
 <?php endif; ?>
 
-<form method="post" class="card card-body" style="max-width:520px;">
-  <div class="mb-3">
-    <label class="form-label">Email</label>
-    <input class="form-control" name="email" type="email" required>
-  </div>
+<form method="post" class="card" style="max-width:560px;">
+  <div class="card__pad">
+    <?= csrf_field() ?>
+    <div class="field">
+      <label for="email">Email</label>
+      <input class="input" id="email" name="email" type="email" value="<?= e($email) ?>" required>
+    </div>
 
-  <div class="mb-3">
-    <label class="form-label">Парола</label>
-    <input class="form-control" name="password" type="password" required>
-  </div>
+    <div style="height:12px;"></div>
 
-  <button class="btn btn-primary">Вход</button>
+    <div class="field">
+      <label for="password">Парола</label>
+      <input class="input" id="password" name="password" type="password" required>
+    </div>
+
+    <div style="height:16px;"></div>
+
+    <button class="btn btn--primary" type="submit">Влез</button>
+    <a class="btn" href="/alumni_club/register.php" style="margin-left:8px;">Регистрация</a>
+  </div>
 </form>
 
-<?php require_once __DIR__ . "/footer.php"; ?>
+<?php layout_footer(); ?>
