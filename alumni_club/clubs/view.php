@@ -1,22 +1,19 @@
 <?php
 require_once __DIR__ . "/../db.php";
 require_once __DIR__ . "/../auth.php";
-require_once __DIR__ . "/../header.php";
 
-$club_id = isset($_GET["id"]) ? (int)$_GET["id"] : 0;
-if ($club_id <= 0) { http_response_code(400); die("Невалиден id."); }
+$club_id = (int)($_GET["id"] ?? 0);
+if ($club_id <= 0) { http_response_code(400); exit("Невалиден id."); }
 
 $uid = current_user_id();
+$user_name = $uid ? current_user_name($conn) : null;
 
-function club_cover(int $club_id): string {
-  return "https://source.unsplash.com/featured/1400x700/?sofia,university,campus&sig=" . $club_id;
-}
-
-$st = $conn->prepare("SELECT * FROM clubs WHERE id = ?");
+// club
+$st = $conn->prepare("SELECT c.*, u.name AS owner_name FROM clubs c JOIN users u ON u.id = c.owner_id WHERE c.id = ? LIMIT 1");
 $st->bind_param("i", $club_id);
 $st->execute();
 $club = $st->get_result()->fetch_assoc();
-if (!$club) { http_response_code(404); die("Клубът не е намерен."); }
+if (!$club) { http_response_code(404); exit("Клубът не е намерен."); }
 
 $is_owner = ($uid !== null && (int)$club["owner_id"] === $uid);
 
@@ -56,7 +53,7 @@ $stPC = $conn->prepare("SELECT COUNT(*) AS cnt FROM posts WHERE club_id = ?");
 $stPC->bind_param("i", $club_id);
 $stPC->execute();
 $total_posts = (int)($stPC->get_result()->fetch_assoc()["cnt"] ?? 0);
-$total_pages = max(1, (int)ceil($total_posts / $per_page));
+$total_pages = max(1, (int)ceil(max(1,$total_posts) / $per_page)); // avoid div0
 
 $stP = $conn->prepare("
   SELECT p.*, u.name AS author_name
@@ -69,157 +66,152 @@ $stP = $conn->prepare("
 $stP->bind_param("iii", $club_id, $per_page, $offset);
 $stP->execute();
 $posts = $stP->get_result();
+
+layout_header(e((string)$club["name"]) . " – Alumni Club", $uid, $user_name);
 ?>
 
-<a class="btn btn-link px-0" href="/alumni_club/clubs/index.php">
-  <i class="fa-solid fa-arrow-left me-1"></i> Всички клубове
-</a>
+<a class="btn btn--sm" href="/alumni_club/clubs/index.php">← Всички клубове</a>
 
-<div class="cover mb-3">
-  <img src="<?= htmlspecialchars(club_cover($club_id)) ?>" alt="club cover">
+<div style="height:12px;"></div>
+
+<div class="cover">
+  <div class="cover__inner">
+    <div class="cover__chip">
+      <div style="width:38px;height:38px;border-radius:14px;background:rgba(255,255,255,.18);display:grid;place-items:center;font-weight:900;">
+        <?= e(mb_strtoupper(mb_substr((string)$club["name"], 0, 1))) ?>
+      </div>
+      <div>
+        <strong><?= e((string)$club["name"]) ?></strong><br>
+        <span class="tiny" style="opacity:.86;">owner: <?= e((string)$club["owner_name"]) ?> • създаден: <?= e((string)$club["created_at"]) ?></span>
+      </div>
+    </div>
+  </div>
 </div>
 
-<div class="card mb-3">
-  <div class="card-body">
-    <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+<div style="height:14px;"></div>
+
+<section class="card">
+  <div class="card__pad">
+    <div style="display:flex; justify-content:space-between; gap:12px; align-items:flex-start; flex-wrap:wrap;">
       <div>
-        <h2 class="fw-bold mb-1"><?= htmlspecialchars($club["name"]) ?></h2>
-        <div class="card-muted">
-          <i class="fa-regular fa-calendar me-1"></i> Създаден: <?= htmlspecialchars($club["created_at"]) ?>
+        <div class="row" style="gap:10px; margin:0;">
+          <div class="badge"><?= (int)$members_count ?> член(а)</div>
+          <div class="badge"><?= (int)$total_posts ?> пост(а)</div>
+          <?php if ($is_owner): ?><div class="badge badge--warning">owner</div><?php endif; ?>
         </div>
       </div>
 
-      <div class="d-flex gap-2 flex-wrap">
-        <?php if ($uid === null): ?>
-          <span class="badge bg-secondary"><i class="fa-solid fa-lock me-1"></i> Влез за Join/Постове</span>
+      <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+        <?php if (!$uid): ?>
+          <span class="badge">Влез за Join/Постове</span>
+          <a class="btn btn--primary btn--sm" href="/alumni_club/login.php">Вход</a>
         <?php else: ?>
           <?php if ($is_member): ?>
-            <form method="post" action="/alumni_club/clubs/leave.php" class="m-0">
+            <form method="post" action="/alumni_club/clubs/leave.php" style="margin:0;">
+              <?= csrf_field() ?>
               <input type="hidden" name="club_id" value="<?= (int)$club_id ?>">
-              <button class="btn btn-outline-danger btn-sm">
-                <i class="fa-solid fa-door-open me-1"></i> Leave
-              </button>
+              <button class="btn btn--danger btn--sm" type="submit">Leave</button>
             </form>
           <?php else: ?>
-            <form method="post" action="/alumni_club/clubs/join.php" class="m-0">
+            <form method="post" action="/alumni_club/clubs/join.php" style="margin:0;">
+              <?= csrf_field() ?>
               <input type="hidden" name="club_id" value="<?= (int)$club_id ?>">
-              <button class="btn btn-primary btn-sm">
-                <i class="fa-solid fa-right-to-bracket me-1"></i> Join
-              </button>
+              <button class="btn btn--primary btn--sm" type="submit">Join</button>
+            </form>
+          <?php endif; ?>
+
+          <?php if ($is_owner): ?>
+            <a class="btn btn--soft btn--sm" href="/alumni_club/clubs/edit_info.php?id=<?= (int)$club_id ?>">Редакция</a>
+            <form method="post" action="/alumni_club/clubs/delete.php" style="margin:0;"
+                  onsubmit="return confirm('Сигурен ли си, че искаш да изтриеш клуба? Това изтрива и постовете/членствата.');">
+              <?= csrf_field() ?>
+              <input type="hidden" name="club_id" value="<?= (int)$club_id ?>">
+              <button class="btn btn--sm" type="submit">Изтрий</button>
             </form>
           <?php endif; ?>
         <?php endif; ?>
-
-        <?php if ($is_owner): ?>
-          <a class="btn btn-soft btn-sm" href="/alumni_club/clubs/edit_info.php?id=<?= (int)$club_id ?>">
-            <i class="fa-solid fa-pen me-1"></i> Edit info
-          </a>
-          <form method="post" action="/alumni_club/clubs/delete.php" class="m-0"
-                onsubmit="return confirm('Сигурна ли си, че искаш да изтриеш клуба?');">
-            <input type="hidden" name="club_id" value="<?= (int)$club_id ?>">
-            <button class="btn btn-outline-dark btn-sm">
-              <i class="fa-solid fa-trash me-1"></i> Delete
-            </button>
-          </form>
-        <?php endif; ?>
       </div>
     </div>
 
-    <div class="row g-2 mt-3">
-      <div class="col-md-3">
-        <div class="kpi">
-          <div class="num"><?= $members_count ?></div>
-          <div class="lbl">Членове</div>
-        </div>
-      </div>
-      <div class="col-md-3">
-        <div class="kpi">
-          <div class="num"><?= $total_posts ?></div>
-          <div class="lbl">Постове</div>
-        </div>
-      </div>
-      <div class="col-md-6">
-        <div class="kpi">
-          <div class="num"><i class="fa-solid fa-circle-info me-1"></i> Официално</div>
-          <div class="lbl">Информацията се редактира само от owner.</div>
-        </div>
-      </div>
-    </div>
+    <hr class="hr">
 
-    <hr>
+    <h2 class="section__title" style="margin-top:0;">Описание</h2>
+    <div class="muted" style="white-space:pre-line; line-height:1.55;"><?= e((string)$club["description"]) ?></div>
 
-    <h6 class="fw-bold">Описание</h6>
-    <div class="card-muted mb-3"><?= nl2br(htmlspecialchars($club["description"] ?? "")) ?></div>
+    <div style="height:12px;"></div>
 
-    <h6 class="fw-bold">Официална информация</h6>
-    <div class="card-muted mb-3"><?= nl2br(htmlspecialchars($club["info"] ?? "")) ?></div>
+    <h2 class="section__title">Официална информация</h2>
+    <div class="muted" style="white-space:pre-line; line-height:1.55;"><?= e((string)($club["info"] ?? "")) ?></div>
 
-    <h6 class="fw-bold">Последни членове</h6>
-    <div class="d-flex flex-wrap gap-2">
-      <?php while($m = $members->fetch_assoc()): ?>
-        <span class="badge badge-soft"><?= htmlspecialchars($m["name"]) ?></span>
+    <div style="height:12px;"></div>
+
+    <h2 class="section__title">Последни членове</h2>
+    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+      <?php $has = false; while($m = $members->fetch_assoc()): $has=true; ?>
+        <span class="badge"><?= e((string)$m["name"]) ?></span>
       <?php endwhile; ?>
-      <?php if ($members_count === 0): ?>
-        <span class="card-muted">Още няма членове.</span>
+      <?php if (!$has): ?>
+        <span class="muted">Още няма членове.</span>
       <?php endif; ?>
     </div>
   </div>
-</div>
+</section>
 
-<div class="d-flex justify-content-between align-items-center mb-2">
-  <h4 class="fw-bold mb-0">Постове</h4>
-  <?php if ($uid !== null && $is_member): ?>
-    <a class="btn btn-primary btn-sm" href="/alumni_club/posts/create.php?club_id=<?= (int)$club_id ?>">
-      <i class="fa-solid fa-plus me-1"></i> Нов пост
-    </a>
+<div style="height:14px;"></div>
+
+<div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+  <h2 class="section__title" style="margin:0;">Постове</h2>
+  <?php if ($uid && $is_member): ?>
+    <a class="btn btn--primary btn--sm" href="/alumni_club/posts/create.php?club_id=<?= (int)$club_id ?>">+ Нов пост</a>
   <?php endif; ?>
 </div>
 
-<?php if ($uid !== null && !$is_member): ?>
-  <div class="alert alert-info">Трябва да си член, за да публикуваш постове.</div>
+<?php if ($uid && !$is_member): ?>
+  <div style="height:10px;"></div>
+  <div class="toast toast--info">
+    <div class="toast__dot" aria-hidden="true"></div>
+    <div class="toast__msg">Трябва да си член, за да публикуваш.</div>
+  </div>
 <?php endif; ?>
 
-<?php while ($p = $posts->fetch_assoc()): ?>
-  <div class="card card-hover mb-3">
-    <div class="card-body">
-      <div class="d-flex justify-content-between flex-wrap gap-2">
+<div style="height:10px;"></div>
+
+<?php $any_posts = false; while ($p = $posts->fetch_assoc()): $any_posts = true; ?>
+  <article class="card card--hover" style="margin-bottom:12px;">
+    <div class="card__pad">
+      <div style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; align-items:flex-start;">
         <div>
-          <h5 class="fw-bold mb-1"><?= htmlspecialchars($p["title"]) ?></h5>
-          <div class="card-muted">
-            <i class="fa-regular fa-user me-1"></i> <?= htmlspecialchars($p["author_name"]) ?>
-            <span class="mx-2">•</span>
-            <i class="fa-regular fa-clock me-1"></i> <?= htmlspecialchars($p["created_at"]) ?>
-          </div>
+          <h3 style="margin:0 0 6px; font-weight:900;"><?= e((string)$p["title"]) ?></h3>
+          <div class="muted tiny">от <?= e((string)$p["author_name"]) ?> • <?= e((string)$p["created_at"]) ?></div>
         </div>
 
         <?php if ($uid !== null && (int)$p["author_id"] === $uid): ?>
-          <form method="post" action="/alumni_club/posts/delete.php" class="m-0"
+          <form method="post" action="/alumni_club/posts/delete.php" style="margin:0;"
                 onsubmit="return confirm('Да изтрия ли поста?');">
+            <?= csrf_field() ?>
             <input type="hidden" name="post_id" value="<?= (int)$p["id"] ?>">
             <input type="hidden" name="club_id" value="<?= (int)$club_id ?>">
-            <button class="btn btn-outline-danger btn-sm">
-              <i class="fa-solid fa-trash me-1"></i> Изтрий
-            </button>
+            <button class="btn btn--danger btn--sm" type="submit">Изтрий</button>
           </form>
         <?php endif; ?>
       </div>
 
-      <hr>
-      <div class="post-content"><?= htmlspecialchars($p["content"]) ?></div>
+      <hr class="hr">
+      <div class="post-content"><?= e((string)$p["content"]) ?></div>
     </div>
-  </div>
+  </article>
 <?php endwhile; ?>
 
-<?php if ($total_pages > 1): ?>
-  <nav class="mt-3">
-    <ul class="pagination">
-      <?php for($i=1; $i <= $total_pages; $i++): ?>
-        <li class="page-item <?= ($i === $page) ? "active" : "" ?>">
-          <a class="page-link" href="/alumni_club/clubs/view.php?id=<?= (int)$club_id ?>&page=<?= $i ?>"><?= $i ?></a>
-        </li>
-      <?php endfor; ?>
-    </ul>
+<?php if (!$any_posts): ?>
+  <div class="muted">Още няма постове. <?php if ($uid && $is_member): ?>Бъди първият!<?php endif; ?></div>
+<?php endif; ?>
+
+<?php if ($total_posts > $per_page): ?>
+  <nav class="pager" aria-label="Страници">
+    <?php for($i=1; $i <= (int)ceil($total_posts / $per_page); $i++): ?>
+      <a href="/alumni_club/clubs/view.php?id=<?= (int)$club_id ?>&page=<?= $i ?>" <?= $i===$page ? 'aria-current="page"' : '' ?>><?= $i ?></a>
+    <?php endfor; ?>
   </nav>
 <?php endif; ?>
 
-<?php require_once __DIR__ . "/../footer.php"; ?>
+<?php layout_footer(); ?>
