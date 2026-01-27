@@ -1,69 +1,82 @@
-<?php require_once __DIR__ . "/header.php"; ?>
+<?php
+require_once __DIR__ . "/db.php";
+require_once __DIR__ . "/auth.php";
 
-<div class="hero mb-4">
-  <div class="hero-inner">
-    <h1 class="mb-2">Alumni Club – Софийски университет</h1>
-    <p class="mb-4">
-      Професионална платформа за алумни общността: клубове, членство, официална информация и постове.
+$uid = current_user_id();
+$user_name = $uid ? current_user_name($conn) : null;
+
+layout_header("Alumni Club – СУ", $uid, $user_name);
+
+?>
+
+<section class="hero" style="
+  background:
+    linear-gradient(135deg, rgba(37,99,235,.92), rgba(124,58,237,.88)),
+    radial-gradient(1200px 500px at 20% -20%, rgba(255,255,255,.25), transparent 60%);
+">
+  <div class="hero__inner">
+    <h1 class="hero__title">Alumni Club – Софийски университет</h1>
+    <p class="hero__text">
+      Модерен портал за алумни общността – клубове, събития и комуникация на едно място.
     </p>
 
-    <div class="d-flex flex-wrap gap-2">
-      <a class="btn btn-primary" href="/alumni_club/clubs/index.php">
-        <i class="fa-solid fa-compass me-1"></i> Разгледай клубовете
-      </a>
+    <div class="hero__actions">
+      <a class="btn btn--primary" href="/alumni_club/clubs/index.php">Клубове</a>
+      <a class="btn btn--primary" href="/alumni_club/events/index.php">Събития</a>
+      <a class="btn btn--primary" href="/alumni_club/chat/index.php">Чат</a>
 
       <?php if (!$uid): ?>
-        <a class="btn btn-soft" href="/alumni_club/register.php">
-          <i class="fa-solid fa-user-plus me-1"></i> Създай акаунт
-        </a>
-        <a class="btn nav-pill text-white" href="/alumni_club/login.php">
-          <i class="fa-solid fa-right-to-bracket me-1"></i> Вход
-        </a>
-      <?php else: ?>
-        <a class="btn btn-soft" href="/alumni_club/clubs/create.php">
-          <i class="fa-solid fa-plus me-1"></i> Създай клуб
-        </a>
+        <a class="btn btn--soft" href="/alumni_club/register.php">Регистрация</a>
+        <a class="btn btn--soft" href="/alumni_club/login.php">Вход</a>
       <?php endif; ?>
     </div>
   </div>
+</section>
+
+<h2 class="section__title">Портал</h2>
+
+<div class="row">
+  <a href="/alumni_club/clubs/index.php" class="card card--hover" style="
+    display:block;
+    background: linear-gradient(135deg, #2563eb, #1e40af);
+    color:#fff;
+  ">
+    <div class="card__pad">
+      <div class="badge" style="background:rgba(255,255,255,.22);">Клубове</div>
+      <h3 style="margin:12px 0 6px; font-weight:900;">Общности и интереси</h3>
+      <p style="opacity:.9; margin:0;">
+        Присъединявай се към клубове и участвай активно.
+      </p>
+    </div>
+  </a>
+
+  <a href="/alumni_club/events/index.php" class="card card--hover" style="
+    display:block;
+    background: linear-gradient(135deg, #16a34a, #15803d);
+    color:#fff;
+  ">
+    <div class="card__pad">
+      <div class="badge" style="background:rgba(255,255,255,.22);">Събития</div>
+      <h3 style="margin:12px 0 6px; font-weight:900;">Календар и активности</h3>
+      <p style="opacity:.9; margin:0;">
+        Следи и участвай в събитията на общността.
+      </p>
+    </div>
+  </a>
+
+  <a href="/alumni_club/chat/index.php" class="card card--hover" style="
+    display:block;
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color:#fff;
+  ">
+    <div class="card__pad">
+      <div class="badge" style="background:rgba(255,255,255,.22);">Чат</div>
+      <h3 style="margin:12px 0 6px; font-weight:900;">Комуникация</h3>
+      <p style="opacity:.9; margin:0;">
+        Общувай с други алумни в реално време.
+      </p>
+    </div>
+  </a>
 </div>
 
-<div class="row g-3">
-  <div class="col-md-4">
-    <div class="card card-hover">
-      <div class="card-body">
-        <div class="d-flex align-items-center gap-2 mb-2">
-          <span class="badge bg-primary"><i class="fa-solid fa-people-group"></i></span>
-          <h5 class="mb-0">Клубове</h5>
-        </div>
-        <div class="card-muted">Създавай и откривай клубове по интереси. Присъединяване с 1 клик.</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="col-md-4">
-    <div class="card card-hover">
-      <div class="card-body">
-        <div class="d-flex align-items-center gap-2 mb-2">
-          <span class="badge bg-success"><i class="fa-solid fa-bullhorn"></i></span>
-          <h5 class="mb-0">Постове</h5>
-        </div>
-        <div class="card-muted">Публикувай новини и инициативи. Само членове могат да пишат.</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="col-md-4">
-    <div class="card card-hover">
-      <div class="card-body">
-        <div class="d-flex align-items-center gap-2 mb-2">
-          <span class="badge bg-warning text-dark"><i class="fa-solid fa-circle-info"></i></span>
-          <h5 class="mb-0">Официална информация</h5>
-        </div>
-        <div class="card-muted">Само създателят (owner) редактира официалната информация за клуба.</div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<?php require_once __DIR__ . "/footer.php"; ?>
+<?php layout_footer(); ?>
